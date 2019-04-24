@@ -21,3 +21,4 @@ myModule.fib(30000)
 finish_c = time.time() - start_c
 
 print(finish_py/finish_c)
+# 1271.9130434782608
