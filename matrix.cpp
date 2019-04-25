@@ -48,7 +48,7 @@ matrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         return PyErr_NoMemory();
     }
 
-    self->m = < vector<vector<int>>();
+    self->m = vector<vector<int>();
     return (PyObject *)self;
 }
 
@@ -57,7 +57,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
 {
     PyObject *ll;   // list of lists
     PyObject *l;    // list
-    PyObject litem; // list item
+    PyObject *litem; // list item
     Py_ssize_t ni, nj;
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &ll))
@@ -78,7 +78,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
             {
                 litem = PyList_GetItem(l, j);
                 Py_INCREF(litem);
-                if (!PyLong_Check(&litem))
+                if (!PyLong_Check(litem))
                 {
                     PyErr_SetString(PyExc_TypeError, "list items must be integers.");
                     return NULL;
@@ -101,7 +101,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
     }
 
     // self->m.clear();
-    self->m.resize(ni, <vector<int>>(nj));
+    self->m.resize(ni, vector<int>(nj));
     return 0;
 }
 
@@ -124,8 +124,7 @@ matrix_length(matrix_t *self)
 {
     if (self->m.empty())
     {
-        Py_INCREF(Py_None);
-        return Py_None;
+        return Py_ssize_t(0);
     }
     else
     {
@@ -229,64 +228,21 @@ PyInit_matrix(void)
     return m;
 }
 
-// matrix.cpp:51:15: error: expected expression
-//     self->m = < vector<vector<int>>();
-//               ^
+// matrix.cpp:51:35: error: expected '>'
+//     self->m = vector<vector<int>();
+//                                   ^
 // matrix.cpp:66:16: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
 //         return NULL;
 //         ~~~~~~ ^~~~
 //                0
-// matrix.cpp:79:23: error: no viable overloaded '='
-//                 litem = PyList_GetItem(l, j);
-//                 ~~~~~ ^ ~~~~~~~~~~~~~~~~~~~~
-// /usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m/object.h:106:16: note: 
-//       candidate function (the implicit copy assignment operator) not viable: no known conversion from 'PyObject *'
-//       (aka '_object *') to 'const _object' for 1st argument; dereference the argument with *
-// typedef struct _object {
-//                ^
-// /usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m/object.h:106:16: note: 
-//       candidate function (the implicit move assignment operator) not viable: no known conversion from 'PyObject *'
-//       (aka '_object *') to '_object' for 1st argument; dereference the argument with *
-// typedef struct _object {
-//                ^
-// matrix.cpp:80:17: error: cannot cast from type 'PyObject' (aka '_object') to pointer type 'PyObject *'
-//       (aka '_object *')
-//                 Py_INCREF(litem);
-//                 ^~~~~~~~~~~~~~~~
-// /usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m/object.h:796:6: note: 
-//       expanded from macro 'Py_INCREF'
-//     ((PyObject *)(op))->ob_refcnt++)
-//      ^~~~~~~~~~~~~~~~
 // matrix.cpp:84:28: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
 //                     return NULL;
 //                     ~~~~~~ ^~~~
 //                            0
-// matrix.cpp:86:17: error: cannot cast from type 'PyObject' (aka '_object') to pointer type 'PyObject *'
-//       (aka '_object *')
-//                 Py_DECREF(litem);
-//                 ^~~~~~~~~~~~~~~~
-// /usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m/object.h:800:36: note: 
-//       expanded from macro 'Py_DECREF'
-//         PyObject *_py_decref_tmp = (PyObject *)(op);    \
-//                                    ^~~~~~~~~~~~~~~~
 // matrix.cpp:92:20: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
 //             return NULL;
 //             ~~~~~~ ^~~~
 //                    0
-// matrix.cpp:104:24: error: expected expression
-//     self->m.resize(ni, <vector<int>>(nj));
-//                        ^
-// matrix.cpp:104:36: error: expected '(' for function-style cast or type construction
-//     self->m.resize(ni, <vector<int>>(nj));
-//                         ~~~~~~~~~~~^
-// matrix.cpp:128:16: error: cannot initialize return object of type 'Py_ssize_t' (aka 'long') with an rvalue of type
-//       'PyObject *' (aka '_object *')
-//         return Py_None;
-//                ^~~~~~~
-// /usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m/object.h:921:17: note: 
-//       expanded from macro 'Py_None'
-// #define Py_None (&_Py_NoneStruct)
-//                 ^~~~~~~~~~~~~~~~~
 // In file included from matrix.cpp:4:
 // In file included from /Library/Developer/CommandLineTools/usr/include/c++/v1/vector:270:
 // In file included from /Library/Developer/CommandLineTools/usr/include/c++/v1/__bit_reference:15:
@@ -294,7 +250,7 @@ PyInit_matrix(void)
 //       expression ('std::__1::vector<int, std::__1::allocator<int> >' and 'const long')
 //         if (*__first == __value_)
 //             ~~~~~~~~ ^  ~~~~~~~~
-// matrix.cpp:146:9: note: in instantiation of function template specialization
+// matrix.cpp:145:9: note: in instantiation of function template specialization
 //       'std::__1::count<std::__1::__wrap_iter<std::__1::vector<int, std::__1::allocator<int> > *>, long>' requested
 //       here
 //     if (count(self->m.begin(), self->m.end(), num))
@@ -367,3 +323,5 @@ PyInit_matrix(void)
 //       match 'vector<type-parameter-0-0, type-parameter-0-1>' against 'const long'
 // operator==(const vector<_Tp, _Allocator>& __x, const vector<_Tp, _Allocator>& __y)
 // ^
+// 3 warnings and 2 errors generated.
+// error: command 'clang' failed with exit status 1
