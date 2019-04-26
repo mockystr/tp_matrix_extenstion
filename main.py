@@ -1,5 +1,4 @@
 from matrix import Matrix
-m = Matrix()
-m.add(4)
-m.add(3)
-print(m)
+m = Matrix([[1, 2, 3, 4], [1, 2, 3, 4]])
+m.print()
+print(len(m))

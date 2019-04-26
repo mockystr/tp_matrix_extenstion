@@ -1,6 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-
+#include <iostream>
 #include <vector>
 using namespace std;
 
@@ -48,22 +48,22 @@ matrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         return PyErr_NoMemory();
     }
 
-    self->m = vector<vector<int>();
+    self->m = vector<vector<int>>();
     return (PyObject *)self;
 }
 
 static int
 matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *ll;   // list of lists
-    PyObject *l;    // list
+    PyObject *ll;    // list of lists
+    PyObject *l;     // list
     PyObject *litem; // list item
     Py_ssize_t ni, nj;
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &ll))
     {
         PyErr_SetString(PyExc_TypeError, "parameter must be a list.");
-        return NULL;
+        return -1;
     }
 
     ni = PyList_Size(ll);
@@ -81,7 +81,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
                 if (!PyLong_Check(litem))
                 {
                     PyErr_SetString(PyExc_TypeError, "list items must be integers.");
-                    return NULL;
+                    return -1;
                 }
                 Py_DECREF(litem);
             }
@@ -89,19 +89,27 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         else
         {
             PyErr_SetString(PyExc_TypeError, "list items must be integers.");
-            return NULL;
+            return -1;
         }
         Py_DECREF(l);
-        // pItem = PyList_GetItem(pList, i);
-        // if (!PyInt_Check(pItem))
-        // {
-        //     PyErr_SetString(PyExc_TypeError, "list items must be integers.");
-        //     return NULL;
-        // }
     }
 
     // self->m.clear();
     self->m.resize(ni, vector<int>(nj));
+
+    for (int i = 0; i < ni; i++)
+    {
+        l = PyList_GetItem(ll, i);
+        Py_INCREF(l);
+        for (int j = 0; j < nj; j++)
+        {
+            litem = PyList_GetItem(l, j);
+            Py_INCREF(litem);
+            self->m[i][j] = (int)PyLong_AsLong(litem);
+            Py_DECREF(litem);
+        }
+        Py_DECREF(l);
+    }
     return 0;
 }
 
@@ -132,6 +140,22 @@ matrix_length(matrix_t *self)
     }
 }
 
+// static PyObject *
+// matrix_print(matrix_t *self)
+// {
+//     for (const std::vector<int> &v : self->m)
+//     {
+//         for (int x : v)
+//         {
+//             cout << x << ' ';
+//         }
+//         printf("\n");
+//     }
+//     return Py_None;
+// }
+
+// asasd
+
 static int
 matrix_contains(matrix_t *self, PyObject *arg)
 {
@@ -142,8 +166,8 @@ matrix_contains(matrix_t *self, PyObject *arg)
     }
 
     long int num = PyLong_AsLong(arg);
-    if (count(self->m.begin(), self->m.end(), num))
-        return 1;
+    // if (count(self->m.begin(), self->m.end(), num))
+    // return 1;
     return 0;
 }
 
@@ -160,6 +184,7 @@ static PySequenceMethods matrix_as_sequence = {
 
 static PyMethodDef matrix_methods[] = {
     {"add", (PyCFunction)matrix_add, METH_VARARGS},
+    // {"print", (PyCFunction)matrix_print, METH_NOARGS},
     {NULL, NULL} /* sentinel */
 };
 
@@ -227,101 +252,3 @@ PyInit_matrix(void)
     PyModule_AddObject(m, "Matrix", (PyObject *)&matrix_Type);
     return m;
 }
-
-// matrix.cpp:51:35: error: expected '>'
-//     self->m = vector<vector<int>();
-//                                   ^
-// matrix.cpp:66:16: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
-//         return NULL;
-//         ~~~~~~ ^~~~
-//                0
-// matrix.cpp:84:28: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
-//                     return NULL;
-//                     ~~~~~~ ^~~~
-//                            0
-// matrix.cpp:92:20: warning: implicit conversion of NULL constant to 'int' [-Wnull-conversion]
-//             return NULL;
-//             ~~~~~~ ^~~~
-//                    0
-// In file included from matrix.cpp:4:
-// In file included from /Library/Developer/CommandLineTools/usr/include/c++/v1/vector:270:
-// In file included from /Library/Developer/CommandLineTools/usr/include/c++/v1/__bit_reference:15:
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/algorithm:1250:22: error: invalid operands to binary
-//       expression ('std::__1::vector<int, std::__1::allocator<int> >' and 'const long')
-//         if (*__first == __value_)
-//             ~~~~~~~~ ^  ~~~~~~~~
-// matrix.cpp:145:9: note: in instantiation of function template specialization
-//       'std::__1::count<std::__1::__wrap_iter<std::__1::vector<int, std::__1::allocator<int> > *>, long>' requested
-//       here
-//     if (count(self->m.begin(), self->m.end(), num))
-//         ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/utility:578:1: note: candidate template ignored: could not
-//       match 'pair' against 'vector'
-// operator==(const pair<_T1,_T2>& __x, const pair<_T1,_T2>& __y)
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/iterator:694:1: note: candidate template ignored: could not
-//       match 'reverse_iterator' against 'vector'
-// operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/iterator:923:1: note: candidate template ignored: could not
-//       match 'istream_iterator' against 'vector'
-// operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/iterator:1027:6: note: candidate template ignored: could not
-//       match 'istreambuf_iterator' against 'vector'
-// bool operator==(const istreambuf_iterator<_CharT,_Traits>& __a,
-//      ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/iterator:1135:1: note: candidate template ignored: could not
-//       match 'move_iterator' against 'vector'
-// operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/iterator:1507:1: note: candidate template ignored: could not
-//       match '__wrap_iter' against 'vector'
-// operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) _NOEXCEPT_DEBUG
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/tuple:1139:1: note: candidate template ignored: could not
-//       match 'tuple' against 'vector'
-// operator==(const tuple<_Tp...>& __x, const tuple<_Up...>& __y)
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:1986:6: note: candidate template ignored: could not
-//       match 'allocator' against 'vector'
-// bool operator==(const allocator<_Tp>&, const allocator<_Up>&) _NOEXCEPT {return true;}
-//      ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:2960:1: note: candidate template ignored: could not
-//       match 'unique_ptr' against 'vector'
-// operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y) {return __x.get() == __y.get();}
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:2996:1: note: candidate template ignored: could not
-//       match 'unique_ptr' against 'vector'
-// operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) _NOEXCEPT
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:3004:1: note: candidate template ignored: could not
-//       match 'unique_ptr<type-parameter-0-0, type-parameter-0-1>' against 'const long'
-// operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) _NOEXCEPT
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:4792:1: note: candidate template ignored: could not
-//       match 'shared_ptr' against 'vector'
-// operator==(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) _NOEXCEPT
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:4846:1: note: candidate template ignored: could not
-//       match 'shared_ptr' against 'vector'
-// operator==(const shared_ptr<_Tp>& __x, nullptr_t) _NOEXCEPT
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/memory:4854:1: note: candidate template ignored: could not
-//       match 'shared_ptr<type-parameter-0-0>' against 'const long'
-// operator==(nullptr_t, const shared_ptr<_Tp>& __x) _NOEXCEPT
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/functional:1952:1: note: candidate template ignored: could
-//       not match 'function' against 'vector'
-// operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) _NOEXCEPT {return !__f;}
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/functional:1957:1: note: candidate template ignored: could
-//       not match 'function<type-parameter-0-0 (type-parameter-0-1...)>' against 'const long'
-// operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) _NOEXCEPT {return !__f;}
-// ^
-// /Library/Developer/CommandLineTools/usr/include/c++/v1/vector:3340:1: note: candidate template ignored: could not
-//       match 'vector<type-parameter-0-0, type-parameter-0-1>' against 'const long'
-// operator==(const vector<_Tp, _Allocator>& __x, const vector<_Tp, _Allocator>& __y)
-// ^
-// 3 warnings and 2 errors generated.
-// error: command 'clang' failed with exit status 1
