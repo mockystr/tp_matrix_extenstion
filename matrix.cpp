@@ -2,6 +2,7 @@
 #include <Python.h>
 #include <iostream>
 #include <vector>
+#include <string>
 using namespace std;
 
 typedef struct
@@ -22,19 +23,6 @@ static int
 matrix_traverse(matrix_t *o, visitproc visit, void *arg)
 {
     return 0;
-}
-
-static PyObject *
-matrix_add(matrix_t *self, PyObject *args)
-{
-    long int num = 0;
-
-    if (!PyArg_ParseTuple(args, "l", &num))
-        return NULL;
-
-    // self->s.insert(num);
-    Py_INCREF(Py_None);
-    return Py_None;
 }
 
 static PyObject *
@@ -94,7 +82,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         Py_DECREF(l);
     }
 
-    // self->m.clear();
+    self->m.clear();
     self->m.resize(ni, vector<int>(nj));
 
     for (int i = 0; i < ni; i++)
@@ -110,21 +98,8 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         }
         Py_DECREF(l);
     }
+    printf("matrix initialized 114 line\n");
     return 0;
-}
-
-static PyObject *
-matrix_repr(matrix_t *self)
-{
-    if (self->m.empty())
-    {
-        return PyUnicode_FromString("<Matrix(empty)>");
-    }
-    else
-    {
-        return PyUnicode_FromString("<Matrix >");
-    }
-    return NULL;
 }
 
 static Py_ssize_t
@@ -140,21 +115,64 @@ matrix_length(matrix_t *self)
     }
 }
 
-// static PyObject *
-// matrix_print(matrix_t *self)
-// {
-//     for (const std::vector<int> &v : self->m)
-//     {
-//         for (int x : v)
-//         {
-//             cout << x << ' ';
-//         }
-//         printf("\n");
-//     }
-//     return Py_None;
-// }
+static PyObject *
+matrix_repr(matrix_t *self)
+{
+    _PyUnicodeWriter writer;
+    _PyUnicodeWriter_Init(&writer);
+    writer.overallocate = 1;
+    writer.min_length = 10;
+    PyObject *el_str = NULL;
 
-// asasd
+    if (_PyUnicodeWriter_WriteASCIIString(&writer, "<Matrix {", 9) < 0)
+    {
+        goto error;
+    }
+
+    // long m_len = PyLong_FromSsize_t(matrix_length(self));
+
+    el_str = PyUnicode_FromFormat("%dx%d", self->m.size(), self->m[0].size());
+    if (_PyUnicodeWriter_WriteStr(&writer, el_str))
+    {
+        Py_DECREF(el_str);
+        goto error;
+    }
+    Py_DECREF(el_str);
+
+    writer.overallocate = 0;
+    if (_PyUnicodeWriter_WriteASCIIString(&writer, "}>", 2) < 0)
+    {
+        goto error;
+    }
+    return _PyUnicodeWriter_Finish(&writer);
+
+error:
+    Py_XDECREF(el_str);
+    _PyUnicodeWriter_Dealloc(&writer);
+    PyErr_SetString(PyExc_TypeError, "smth went wrong");
+    return NULL;
+}
+
+static PyObject *
+matrix_print(matrix_t *self)
+{
+    if (self->m.empty())
+    {
+        cout << "[]";
+    }
+    else
+    {
+        for (const std::vector<int> &v : self->m)
+        {
+            for (int x : v)
+            {
+                cout << x << ' ';
+            }
+            printf("\n");
+        }
+    }
+    return Py_None;
+}
 
 static int
 matrix_contains(matrix_t *self, PyObject *arg)
@@ -166,8 +184,16 @@ matrix_contains(matrix_t *self, PyObject *arg)
     }
 
     long int num = PyLong_AsLong(arg);
-    // if (count(self->m.begin(), self->m.end(), num))
-    // return 1;
+
+    for (const std::vector<int> &l : self->m)
+    {
+        for (int el : l)
+        {
+            if (num == el)
+                return 1;
+        }
+    }
+
     return 0;
 }
 
@@ -182,9 +208,87 @@ static PySequenceMethods matrix_as_sequence = {
     (objobjproc)matrix_contains, /* sq_contains */
 };
 
+static PyObject *
+matrix_mul(PyObject *v, PyObject *w)
+{
+    PyErr_SetString(PyExc_ValueError, "testing");
+    return NULL;
+}
+
+static PyObject *
+matrix_add(matrix_t *self, PyObject *w)
+{
+    matrix_t *obj;
+    obj = self;
+
+    if (PyLong_Check(w))
+    {
+        for (unsigned long i = 0; i < obj->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < obj->m[i].size(); j++)
+                obj->m[i][j] += (int)PyLong_AsLong(w);
+        }
+    }
+    else if (PyMatrix_Check(w))
+    {
+        if (self->m.size() != w->m.size() && self->m[0].size() != w->m[0].size())
+        {
+            PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
+            return NULL;
+        }
+
+        for (unsigned long i = 0; i < obj->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < obj->m[i].size(); j++)
+                obj->m[i][j] += (int)PyLong_AsLong(w[i][j]);
+        }
+
+        cout << "adding a smth to matrix \n";
+    }
+    return (PyObject *)obj;
+}
+
+static PyNumberMethods matrix_as_number = {
+    (binaryfunc)matrix_add, // nb_add
+    0,                      // nb_subtract
+    (binaryfunc)matrix_mul, // nb_multiply
+    0,                      // nb_remainder
+    0,                      // nb_divmod
+    0,                      // nb_power
+    0,                      // nb_negative
+    0,                      // nb_positive
+    0,                      // nb_absolute
+    0,                      // nb_bool
+    0,                      // nb_invert
+    0,                      // nb_lshift
+    0,                      // nb_rshift
+    0,                      // nb_and
+    0,                      // nb_xor
+    0,                      // nb_or
+    0,                      // nb_int
+    0,                      // nb_reserved
+    0,                      // nb_float
+    0,                      // nb_inplace_add
+    0,                      // nb_inplace_subtract
+    0,                      // nb_inplace_multiply
+    0,                      // nb_inplace_remainder
+    0,                      // nb_inplace_power
+    0,                      // nb_inplace_lshift
+    0,                      // nb_inplace_rshift
+    0,                      // nb_inplace_and
+    0,                      // nb_inplace_xor
+    0,                      // nb_inplace_or
+    0,                      // nb_floor_divide
+    0,                      // nb_true_divide
+    0,                      // nb_inplace_floor_divide
+    0,                      // nb_inplace_true_divide
+    0,                      // nb_index
+    0,                      // nb_matrix_multiply
+    0,                      // nb_inplace_matrix_multiply
+};
+
 static PyMethodDef matrix_methods[] = {
-    {"add", (PyCFunction)matrix_add, METH_VARARGS},
-    // {"print", (PyCFunction)matrix_print, METH_NOARGS},
+    {"print", (PyCFunction)matrix_print, METH_NOARGS},
     {NULL, NULL} /* sentinel */
 };
 
@@ -198,7 +302,7 @@ PyTypeObject matrix_Type = {
     0,                                              /* tp_setattr */
     0,                                              /* tp_reserved */
     (reprfunc)matrix_repr,                          /* tp_repr */
-    0,                                              /* tp_as_number */
+    &matrix_as_number,                              /* tp_as_number */
     &matrix_as_sequence,                            /* tp_as_sequence */
     0,                                              /* tp_as_mapping */
     0,                                              /* tp_hash */

@@ -1,24 +1,35 @@
 #include <iostream>
+#include <string>
 #include <vector>
 
 using namespace std;
 
 int main()
 {
+    vector<vector<int>> m;
+    m.clear();
+
     long n = 123123;
-    vector<vector<int>> m = {{int(n), int(n), 3},
-                             {12, 2}};
-    // vector<vector<int>> m;
-    // if (m.empty()) {
-    // m.pop_back();
-    // cout << "empty\n";
-    // }
-
-
-    for (const std::vector<int> &v : m)
+    m = {{int(n), int(n), 3},
+         {12, 2}};
+    for (int i = 0; i < m.size(); i++)
     {
-        for (int x : v)
-            std::cout << x << ' ';
-        std::cout << std::endl;
+        for (int j = 0; j < m[i].size(); j++)
+            cout << m[i][j];
+        cout << endl;
     }
+
+    for (int i = 0; i < m.size(); i++)
+    {
+        for (int j = 0; j < m[i].size(); j++)
+            m[i][j] += 5;
+    }
+
+    for (int i = 0; i < m.size(); i++)
+    {
+        for (int j = 0; j < m[i].size(); j++)
+            cout << m[i][j];
+        cout << endl;
+    }
+
 }
