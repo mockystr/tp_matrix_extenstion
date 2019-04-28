@@ -5,9 +5,7 @@ from time import time
 
 
 if __name__ == "__main__":    
-    l = 2
-    
-    # l = 500
+    l = 500
     # python finish at 31.077462911605835
     # cpp finish at 0.011924982070922852
     
@@ -27,13 +25,16 @@ if __name__ == "__main__":
 
     # (cpp_m1 * cpp_m2).print()
 
+
+    # proverochki
+
     # m = Matrix([[1.1, 2, 33, 4.45],
     #             [1.56, 2, 3.123, 4.112]])
     # m.print()
     # print(len(m))
 
     # print(40 in m)
-    # a = m - 3
+    # a = m + m
     # a.print()
 
     # t = m.transpose()

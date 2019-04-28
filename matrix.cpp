@@ -217,7 +217,6 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
             for (int j = 0; j < nj; j++)
             {
                 litem = PyList_GetItem(l, j);
-                // cout << PyFloat_Check(litem);
                 Py_INCREF(litem);
                 if (!PyLong_Check(litem) && !PyFloat_Check(litem))
                 {
@@ -379,7 +378,7 @@ matrix_mul(matrix_t *self, PyObject *w)
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
     matrix_t *obj = (matrix_t *)new_;
 
-    if (PyLong_Check(w) && PyFloat_Check(w))
+    if (PyLong_Check(w) || PyFloat_Check(w))
     {
         obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
@@ -425,7 +424,7 @@ matrix_add(matrix_t *self, PyObject *w)
     matrix_t *obj = (matrix_t *)new_;
     obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
-    if (PyLong_Check(w) && PyFloat_Check(w))
+    if (PyLong_Check(w) || PyFloat_Check(w))
     {
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
@@ -463,7 +462,7 @@ matrix_sub(matrix_t *self, PyObject *w)
     matrix_t *obj = (matrix_t *)new_;
     obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
-    if (PyLong_Check(w) && PyFloat_Check(w))
+    if (PyLong_Check(w) || PyFloat_Check(w))
     {
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
