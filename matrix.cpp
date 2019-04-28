@@ -246,7 +246,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         {
             litem = PyList_GetItem(l, j);
             Py_INCREF(litem);
-            self->m[i][j] = (int)PyFloat_AsDouble(litem);
+            self->m[i][j] = PyFloat_AsDouble(litem);
             Py_DECREF(litem);
         }
         Py_DECREF(l);

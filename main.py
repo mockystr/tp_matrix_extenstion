@@ -27,8 +27,8 @@ if __name__ == "__main__":
 
     # (cpp_m1 * cpp_m2).print()
 
-    m = Matrix([[1, 2, 33, 4],
-                [1, 2, 3, 4]])
+    # m = Matrix([[1.1, 2, 33, 4.45],
+    #             [1.56, 2, 3.123, 4.112]])
     # m.print()
     # print(len(m))
 
@@ -39,11 +39,12 @@ if __name__ == "__main__":
     # t = m.transpose()
     # t.print()
 
-    b = m / 5
-    b.print()
+    # b = m / 5.3
+    # b.print()
 
     # print(m[(1, 4)])
-
+    # TypeError: Matrix __getitem__ parameter out of range
+    
     # m = Matrix([[1, 2], [1, 2, 3]])
     # TypeError: matrix must have fixed els count on every row
 
