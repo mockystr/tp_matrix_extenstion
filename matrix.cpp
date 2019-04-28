@@ -5,6 +5,9 @@
 #include <string>
 using namespace std;
 
+// staticforward PyTypeObject matrix_Type;
+// PyTypeObject matrix_Type;
+
 typedef struct
 {
     PyObject_HEAD
@@ -129,8 +132,6 @@ matrix_repr(matrix_t *self)
         goto error;
     }
 
-    // long m_len = PyLong_FromSsize_t(matrix_length(self));
-
     el_str = PyUnicode_FromFormat("%dx%d", self->m.size(), self->m[0].size());
     if (_PyUnicodeWriter_WriteStr(&writer, el_str))
     {
@@ -219,29 +220,37 @@ static PyObject *
 matrix_add(matrix_t *self, PyObject *w)
 {
     matrix_t *obj;
-    obj = self;
+    obj = PyObject_New(matrix_t, &matrix_Type);
+    obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
 
     if (PyLong_Check(w))
     {
-        for (unsigned long i = 0; i < obj->m.size(); i++)
+        for (unsigned long i = 0; i < self->m.size(); i++)
         {
-            for (unsigned long j = 0; j < obj->m[i].size(); j++)
-                obj->m[i][j] += (int)PyLong_AsLong(w);
-        }
-    }
-    else if (PyMatrix_Check(w))
-    {
-        if (self->m.size() != w->m.size() && self->m[0].size() != w->m[0].size())
-        {
-            PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
-            return NULL;
+            for (unsigned long j = 0; j < self->m[i].size(); j++)
+                obj->m[i][j] = self->m[i][j] + (int)PyLong_AsLong(w);
         }
 
-        for (unsigned long i = 0; i < obj->m.size(); i++)
-        {
-            for (unsigned long j = 0; j < obj->m[i].size(); j++)
-                obj->m[i][j] += (int)PyLong_AsLong(w[i][j]);
-        }
+        // for (unsigned long i = 0; i < self->m.size(); i++)
+        // {
+        //     for (unsigned long j = 0; j < self->m[i].size(); j++)
+        //         obj->m[i][j] += (int)PyLong_AsLong(w);
+        // }
+    }
+    else if (string(w->ob_type->tp_name) == "matrix_t")
+    {
+
+        // if (self->m.size() != w->m.size() && self->m[0].size() != w->m[0].size())
+        // {
+        //     PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
+        //     return NULL;
+        // }
+
+        // for (unsigned long i = 0; i < obj->m.size(); i++)
+        // {
+        //     for (unsigned long j = 0; j < obj->m[i].size(); j++)
+        //         obj->m[i][j] += (int)PyLong_AsLong(w->m[i][j]);
+        // }
 
         cout << "adding a smth to matrix \n";
     }
