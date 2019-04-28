@@ -174,6 +174,9 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
     }
 
     ni = PyList_Size(ll);
+    // чтобы проверить, что в каждом ряду одинаковое кол-во элементов
+    Py_ssize_t els_on_row_count = 0;
+
     for (int i = 0; i < ni; i++)
     {
         l = PyList_GetItem(ll, i);
@@ -181,6 +184,22 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         if (PyList_Check(l))
         {
             nj = PyList_Size(l);
+
+            if (nj == 0) {
+                PyErr_SetString(PyExc_TypeError, "list cannot be empty");
+                return -1;
+            }
+
+            if (els_on_row_count == 0) {
+                els_on_row_count = nj;
+            }
+            else {
+                if (nj != els_on_row_count) {
+                    PyErr_SetString(PyExc_TypeError, "matrix must have fixed els count on every row");
+                    return -1;
+                }
+            }
+
             for (int j = 0; j < nj; j++)
             {
                 litem = PyList_GetItem(l, j);
@@ -327,7 +346,7 @@ matrix_add(matrix_t *self, PyObject *w)
     PyObject *args = nullptr, *kwds = nullptr;
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
     // obj = PyObject_GC_New(matrix_t, &matrix_Type);
-    matrix_t *obj = (matrix_t *) new_;
+    matrix_t *obj = (matrix_t *)new_;
     obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
 
     if (PyLong_Check(w))
@@ -337,30 +356,26 @@ matrix_add(matrix_t *self, PyObject *w)
             for (unsigned long j = 0; j < self->m[i].size(); j++)
                 obj->m[i][j] = self->m[i][j] + (int)PyLong_AsLong(w);
         }
-
-        // for (unsigned long i = 0; i < self->m.size(); i++)
-        // {
-        //     for (unsigned long j = 0; j < self->m[i].size(); j++)
-        //         obj->m[i][j] += (int)PyLong_AsLong(w);
-        // }
     }
-    // else if (string(w->ob_type->tp_name) == "matrix_t")
-    // {
-
-    //     // if (self->m.size() != w->m.size() && self->m[0].size() != w->m[0].size())
-    //     // {
-    //     //     PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
-    //     //     return NULL;
-    //     // }
-
-    //     // for (unsigned long i = 0; i < obj->m.size(); i++)
-    //     // {
-    //     //     for (unsigned long j = 0; j < obj->m[i].size(); j++)
-    //     //         obj->m[i][j] += (int)PyLong_AsLong(w->m[i][j]);
-    //     // }
-
-    //     cout << "adding a smth to matrix \n";
-    // }
+    else if (string(w->ob_type->tp_name) == "matrix.Matrix")
+    {
+        matrix_t* mw = (matrix_t *) w;
+    
+        if (self->m.size() != mw->m.size() && self->m[0].size() != mw->m[0].size())
+        {
+            PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
+            return NULL;
+        }
+        for (unsigned long i = 0; i < obj->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < obj->m[i].size(); j++)
+                obj->m[i][j] =self->m[i][j] + mw->m[i][j];
+        }
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Matrix can only be folded with a number or matrix.");
+        return NULL;
+    }
     return (PyObject *)obj;
 }
 
