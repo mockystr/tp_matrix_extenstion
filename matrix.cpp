@@ -18,15 +18,22 @@ typedef struct
 
 PyMODINIT_FUNC PyInit_matrix(void);
 static PyObject *matrix_add(matrix_t *self, PyObject *w);
-static PyObject *matrix_mul(PyObject *v, PyObject *w);
+static PyObject *matrix_sub(matrix_t *self, PyObject *w);
+static PyObject *matrix_mul(matrix_t *self, PyObject *w);
+static PyObject *matrix_div(matrix_t *self, PyObject *w);
+
+static PyObject *matrix_getitem(matrix_t *self, PyObject *item);
+
 static int matrix_contains(matrix_t *self, PyObject *arg);
-static PyObject *matrix_print(matrix_t *self);
-static PyObject *matrix_repr(matrix_t *self);
 static Py_ssize_t matrix_length(matrix_t *self);
-static int matrix_init(matrix_t *self, PyObject *args, PyObject *kwds);
+
 static PyObject *matrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static int matrix_init(matrix_t *self, PyObject *args, PyObject *kwds);
 static int matrix_traverse(matrix_t *o, visitproc visit, void *arg);
 static void matrix_dealloc(matrix_t *o);
+static PyObject *matrix_repr(matrix_t *self);
+static PyObject *matrix_print(matrix_t *self);
+static PyObject *matrix_transpose(matrix_t *self);
 
 static PySequenceMethods matrix_as_sequence = {
     (lenfunc)matrix_length,      /* sq_length */
@@ -41,7 +48,7 @@ static PySequenceMethods matrix_as_sequence = {
 
 static PyNumberMethods matrix_as_number = {
     (binaryfunc)matrix_add, // nb_add
-    0,                      // nb_subtract
+    (binaryfunc)matrix_sub, // nb_subtract
     (binaryfunc)matrix_mul, // nb_multiply
     0,                      // nb_remainder
     0,                      // nb_divmod
@@ -70,7 +77,7 @@ static PyNumberMethods matrix_as_number = {
     0,                      // nb_inplace_xor
     0,                      // nb_inplace_or
     0,                      // nb_floor_divide
-    0,                      // nb_true_divide
+    (binaryfunc)matrix_div, // nb_true_divide
     0,                      // nb_inplace_floor_divide
     0,                      // nb_inplace_true_divide
     0,                      // nb_index
@@ -78,8 +85,15 @@ static PyNumberMethods matrix_as_number = {
     0,                      // nb_inplace_matrix_multiply
 };
 
+static PyMappingMethods matrix_as_mapping = {
+    0,
+    (binaryfunc) matrix_getitem,
+    0,
+};
+
 static PyMethodDef matrix_methods[] = {
     {"print", (PyCFunction)matrix_print, METH_NOARGS},
+    {"transpose", (PyCFunction)matrix_transpose, METH_NOARGS},
     {NULL, NULL} /* sentinel */
 };
 
@@ -95,7 +109,7 @@ PyTypeObject matrix_Type = {
     (reprfunc)matrix_repr,                          /* tp_repr */
     &matrix_as_number,                              /* tp_as_number */
     &matrix_as_sequence,                            /* tp_as_sequence */
-    0,                                              /* tp_as_mapping */
+    &matrix_as_mapping,                             /* tp_as_mapping */
     0,                                              /* tp_hash */
     0,                                              /* tp_call */
     0,                                              /* tp_str */
@@ -174,7 +188,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
     }
 
     ni = PyList_Size(ll);
-    // чтобы проверить, что в каждом ряду одинаковое кол-во элементов
+    // to check that on every row has the same count of element
     Py_ssize_t els_on_row_count = 0;
 
     for (int i = 0; i < ni; i++)
@@ -236,7 +250,6 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         }
         Py_DECREF(l);
     }
-    printf("matrix initialized 114 line\n");
     return 0;
 }
 
@@ -294,7 +307,8 @@ matrix_print(matrix_t *self)
 {
     if (self->m.empty())
     {
-        cout << "[]";
+        PyErr_SetString(PyExc_TypeError, "matrix is empty");
+        return NULL;
     }
     else
     {
@@ -302,12 +316,36 @@ matrix_print(matrix_t *self)
         {
             for (int x : v)
             {
-                cout << x << ' ';
+                cout << x << " ";
             }
-            printf("\n");
+            cout << endl;
         }
     }
     return Py_None;
+}
+
+static PyObject *
+matrix_transpose(matrix_t *self)
+{
+    if (self->m.empty())
+    {
+        PyErr_SetString(PyExc_TypeError, "matrix is empty");
+        return NULL;
+    }
+    else
+    {
+        PyObject *args = nullptr, *kwds = nullptr;
+        PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
+        matrix_t *obj = (matrix_t *)new_;
+        obj->m.resize(self->m[0].size(), vector<int>(self->m.size()));
+
+        for(unsigned long i = 0; i < self->m[0].size(); ++i) {  
+            for(unsigned long j = 0; j < self->m.size(); ++j)
+                obj->m[i][j] = self->m[j][i];
+            }
+        
+        return (PyObject *) obj;
+    }
 }
 
 static int
@@ -334,10 +372,48 @@ matrix_contains(matrix_t *self, PyObject *arg)
 }
 
 static PyObject *
-matrix_mul(PyObject *v, PyObject *w)
+matrix_mul(matrix_t *self, PyObject *w)
 {
-    PyErr_SetString(PyExc_ValueError, "testing");
-    return NULL;
+    PyObject *args = nullptr, *kwds = nullptr;
+    PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
+    matrix_t *obj = (matrix_t *)new_;
+
+    if (PyLong_Check(w))
+    {
+        obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+
+        for (unsigned long i = 0; i < self->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < self->m[i].size(); j++)
+                obj->m[i][j] = self->m[i][j] * (int)PyLong_AsLong(w);
+        }
+    }
+    else if (string(w->ob_type->tp_name) == "matrix.Matrix")
+    {
+        matrix_t* mw = (matrix_t *) w;
+        obj->m.resize(self->m.size(), vector<int>(mw->m[0].size()));
+        // cols of self must be equal to rows of mw
+        if (self->m[0].size() != mw->m.size())
+        {
+            PyErr_SetString(PyExc_TypeError, "cols of first matrix must be equal to rows of second");
+            return NULL;
+        }
+        
+        for (auto &i : obj->m)
+            fill(i.begin(), i.end(), 0);
+
+        for (unsigned long i = 0; i < self->m.size(); ++i) 
+            for (unsigned long j = 0; j < mw->m[0].size(); ++j)
+                for (unsigned long k = 0; k < self->m[0].size(); ++k) {
+                    obj->m[i][j] += self->m[i][k] * mw->m[k][j];
+                } 
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Matrix can only be multiple with a number or matrix.");
+        return NULL;
+    }
+
+    return (PyObject *)obj;
 }
 
 static PyObject *
@@ -345,7 +421,6 @@ matrix_add(matrix_t *self, PyObject *w)
 {
     PyObject *args = nullptr, *kwds = nullptr;
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
-    // obj = PyObject_GC_New(matrix_t, &matrix_Type);
     matrix_t *obj = (matrix_t *)new_;
     obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
 
@@ -377,6 +452,83 @@ matrix_add(matrix_t *self, PyObject *w)
         return NULL;
     }
     return (PyObject *)obj;
+}
+
+static PyObject *
+matrix_sub(matrix_t *self, PyObject *w)
+{
+    PyObject *args = nullptr, *kwds = nullptr;
+    PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
+    matrix_t *obj = (matrix_t *)new_;
+    obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+
+    if (PyLong_Check(w))
+    {
+        for (unsigned long i = 0; i < self->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < self->m[i].size(); j++)
+                obj->m[i][j] = self->m[i][j] - (int)PyLong_AsLong(w);
+        }
+    }
+    else if (string(w->ob_type->tp_name) == "matrix.Matrix")
+    {
+        matrix_t* mw = (matrix_t *) w;
+    
+        if (self->m.size() != mw->m.size() && self->m[0].size() != mw->m[0].size())
+        {
+            PyErr_SetString(PyExc_TypeError, "matrix cols and rows must be equal");
+            return NULL;
+        }
+        for (unsigned long i = 0; i < obj->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < obj->m[i].size(); j++)
+                obj->m[i][j] =self->m[i][j] - mw->m[i][j];
+        }
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Matrix can only be folded with a number or matrix.");
+        return NULL;
+    }
+    return (PyObject *)obj;
+}
+
+static PyObject *matrix_div(matrix_t *self, PyObject *w) {
+    if (PyLong_Check(w)) {
+        PyObject *args = nullptr, *kwds = nullptr;
+        PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
+        matrix_t *obj = (matrix_t *)new_;
+        obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+
+        for (unsigned long i = 0; i < self->m.size(); i++)
+        {
+            for (unsigned long j = 0; j < self->m[i].size(); j++)
+                obj->m[i][j] = (int)(self->m[i][j] / (int)PyLong_AsLong(w));
+        }
+
+        return (PyObject *) obj;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Matrix can be divided only by integer");
+        return NULL;
+    }
+}
+
+static PyObject *matrix_getitem(matrix_t *self, PyObject *item) {
+    if (PyTuple_Check(item)) {
+        unsigned long i = PyLong_AsLong(PyTuple_GetItem(item, 0));
+        unsigned long j = PyLong_AsLong(PyTuple_GetItem(item, 1));
+        
+        if (!(i >= 0 && i < self->m.size()) || !(j >=0 && j < self->m[0].size())) {
+            PyErr_SetString(PyExc_TypeError, "Matrix __getitem__ parameter out of range");
+            return NULL;
+        }
+        
+        return Py_BuildValue("i", self->m[i][j]);
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Matrix __getitem__ parameter must be tuple");
+        return NULL;
+    }
 }
 
 PyMODINIT_FUNC
