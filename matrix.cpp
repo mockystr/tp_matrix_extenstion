@@ -12,7 +12,7 @@ typedef struct
 {
     PyObject_HEAD
         /* Type-specific fields go here. */
-        vector<vector<int>>
+        vector<vector<double>>
             m;
 } matrix_t;
 
@@ -169,7 +169,7 @@ matrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         return PyErr_NoMemory();
     }
 
-    self->m = vector<vector<int>>();
+    self->m = vector<vector<double>>();
     return (PyObject *)self;
 }
 
@@ -217,10 +217,11 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
             for (int j = 0; j < nj; j++)
             {
                 litem = PyList_GetItem(l, j);
+                // cout << PyFloat_Check(litem);
                 Py_INCREF(litem);
-                if (!PyLong_Check(litem))
+                if (!PyLong_Check(litem) && !PyFloat_Check(litem))
                 {
-                    PyErr_SetString(PyExc_TypeError, "list items must be integers.");
+                    PyErr_SetString(PyExc_TypeError, "list items must be integers or float.");
                     return -1;
                 }
                 Py_DECREF(litem);
@@ -228,14 +229,14 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         }
         else
         {
-            PyErr_SetString(PyExc_TypeError, "list items must be integers.");
+            PyErr_SetString(PyExc_TypeError, "list items must be integers or float.");
             return -1;
         }
         Py_DECREF(l);
     }
 
     self->m.clear();
-    self->m.resize(ni, vector<int>(nj));
+    self->m.resize(ni, vector<double>(nj));
 
     for (int i = 0; i < ni; i++)
     {
@@ -245,7 +246,7 @@ matrix_init(matrix_t *self, PyObject *args, PyObject *kwds)
         {
             litem = PyList_GetItem(l, j);
             Py_INCREF(litem);
-            self->m[i][j] = (int)PyLong_AsLong(litem);
+            self->m[i][j] = (int)PyFloat_AsDouble(litem);
             Py_DECREF(litem);
         }
         Py_DECREF(l);
@@ -312,9 +313,9 @@ matrix_print(matrix_t *self)
     }
     else
     {
-        for (const std::vector<int> &v : self->m)
+        for (const std::vector<double> &v : self->m)
         {
-            for (int x : v)
+            for (double x : v)
             {
                 cout << x << " ";
             }
@@ -337,7 +338,7 @@ matrix_transpose(matrix_t *self)
         PyObject *args = nullptr, *kwds = nullptr;
         PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
         matrix_t *obj = (matrix_t *)new_;
-        obj->m.resize(self->m[0].size(), vector<int>(self->m.size()));
+        obj->m.resize(self->m[0].size(), vector<double>(self->m.size()));
 
         for(unsigned long i = 0; i < self->m[0].size(); ++i) {  
             for(unsigned long j = 0; j < self->m.size(); ++j)
@@ -351,17 +352,17 @@ matrix_transpose(matrix_t *self)
 static int
 matrix_contains(matrix_t *self, PyObject *arg)
 {
-    if (!PyLong_Check(arg))
+    if (!PyLong_Check(arg) && !PyFloat_Check(arg))
     {
         PyErr_SetString(PyExc_TypeError, "object must be number");
         return -1;
     }
 
-    long int num = PyLong_AsLong(arg);
+    double num = PyFloat_AsDouble(arg);
 
-    for (const std::vector<int> &l : self->m)
+    for (const std::vector<double> &l : self->m)
     {
-        for (int el : l)
+        for (double el : l)
         {
             if (num == el)
                 return 1;
@@ -378,20 +379,20 @@ matrix_mul(matrix_t *self, PyObject *w)
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
     matrix_t *obj = (matrix_t *)new_;
 
-    if (PyLong_Check(w))
+    if (PyLong_Check(w) && PyFloat_Check(w))
     {
-        obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+        obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
             for (unsigned long j = 0; j < self->m[i].size(); j++)
-                obj->m[i][j] = self->m[i][j] * (int)PyLong_AsLong(w);
+                obj->m[i][j] = self->m[i][j] * PyFloat_AsDouble(w);
         }
     }
     else if (string(w->ob_type->tp_name) == "matrix.Matrix")
     {
         matrix_t* mw = (matrix_t *) w;
-        obj->m.resize(self->m.size(), vector<int>(mw->m[0].size()));
+        obj->m.resize(self->m.size(), vector<double>(mw->m[0].size()));
         // cols of self must be equal to rows of mw
         if (self->m[0].size() != mw->m.size())
         {
@@ -422,14 +423,14 @@ matrix_add(matrix_t *self, PyObject *w)
     PyObject *args = nullptr, *kwds = nullptr;
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
     matrix_t *obj = (matrix_t *)new_;
-    obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+    obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
-    if (PyLong_Check(w))
+    if (PyLong_Check(w) && PyFloat_Check(w))
     {
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
             for (unsigned long j = 0; j < self->m[i].size(); j++)
-                obj->m[i][j] = self->m[i][j] + (int)PyLong_AsLong(w);
+                obj->m[i][j] = self->m[i][j] + PyFloat_AsDouble(w);
         }
     }
     else if (string(w->ob_type->tp_name) == "matrix.Matrix")
@@ -460,14 +461,14 @@ matrix_sub(matrix_t *self, PyObject *w)
     PyObject *args = nullptr, *kwds = nullptr;
     PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
     matrix_t *obj = (matrix_t *)new_;
-    obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+    obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
-    if (PyLong_Check(w))
+    if (PyLong_Check(w) && PyFloat_Check(w))
     {
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
             for (unsigned long j = 0; j < self->m[i].size(); j++)
-                obj->m[i][j] = self->m[i][j] - (int)PyLong_AsLong(w);
+                obj->m[i][j] = self->m[i][j] - PyFloat_AsDouble(w);
         }
     }
     else if (string(w->ob_type->tp_name) == "matrix.Matrix")
@@ -493,28 +494,33 @@ matrix_sub(matrix_t *self, PyObject *w)
 }
 
 static PyObject *matrix_div(matrix_t *self, PyObject *w) {
-    if (PyLong_Check(w)) {
+    if (PyLong_Check(w) || PyFloat_Check(w)) {
         PyObject *args = nullptr, *kwds = nullptr;
         PyObject *new_ = matrix_new(&matrix_Type, args, kwds);
         matrix_t *obj = (matrix_t *)new_;
-        obj->m.resize(self->m.size(), vector<int>(self->m[0].size()));
+        obj->m.resize(self->m.size(), vector<double>(self->m[0].size()));
 
         for (unsigned long i = 0; i < self->m.size(); i++)
         {
             for (unsigned long j = 0; j < self->m[i].size(); j++)
-                obj->m[i][j] = (int)(self->m[i][j] / (int)PyLong_AsLong(w));
+                obj->m[i][j] = self->m[i][j] / PyFloat_AsDouble(w);
         }
 
         return (PyObject *) obj;
     }
     else {
-        PyErr_SetString(PyExc_TypeError, "Matrix can be divided only by integer");
+        PyErr_SetString(PyExc_TypeError, "Matrix can be divided only by integer or float");
         return NULL;
     }
 }
 
 static PyObject *matrix_getitem(matrix_t *self, PyObject *item) {
     if (PyTuple_Check(item)) {
+        if (!PyLong_Check(PyTuple_GetItem(item, 0)) || !PyLong_Check(PyTuple_GetItem(item, 1))) {
+            PyErr_SetString(PyExc_TypeError, "Matrix __getitem__ parameter must be integer or float");
+            return NULL;
+        }
+
         unsigned long i = PyLong_AsLong(PyTuple_GetItem(item, 0));
         unsigned long j = PyLong_AsLong(PyTuple_GetItem(item, 1));
         
@@ -523,7 +529,7 @@ static PyObject *matrix_getitem(matrix_t *self, PyObject *item) {
             return NULL;
         }
         
-        return Py_BuildValue("i", self->m[i][j]);
+        return Py_BuildValue("d", self->m[i][j]);
     }
     else {
         PyErr_SetString(PyExc_TypeError, "Matrix __getitem__ parameter must be tuple");
