@@ -2,9 +2,7 @@ from matrix import Matrix
 from python_matrix import gen_matrix, matrix_mul
 from pprint import pprint
 from time import time
-import cython_matrix 
 
-print(cython_matrix.matrix_mul)
 if __name__ == "__main__":
     # l = 500
     # -----------------------------------
