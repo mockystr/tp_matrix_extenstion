@@ -13,15 +13,9 @@ if __name__ == "__main__":
     # numpy finish at                       0.010122060775756836
     # --------------------------------------
 
-    l = 200
+    l = 500
     m1 = gen_matrix(l)
     m2 = gen_matrix(l)
-
-    m1_arr = np.array(m1)
-    m2_arr = np.array(m2)
-
-    cpp_m1 = Matrix(m1)
-    cpp_m2 = Matrix(m2)
 
     # pprint(m1)
     # pprint(m2)
@@ -30,10 +24,14 @@ if __name__ == "__main__":
     # print('python finish at {}'.format(time() - start))
 
     start = time()
+    m1_arr = np.array(m1)
+    m2_arr = np.array(m2)
     np.matmul(m1_arr, m2_arr)
     print('numpy finish at {}'.format(time() - start))
 
     start = time()
+    cpp_m1 = Matrix(m1)
+    cpp_m2 = Matrix(m2)
     cpp_m1 * cpp_m2
     print('cpp finish at {}'.format(time() - start))
 
