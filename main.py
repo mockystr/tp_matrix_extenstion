@@ -1,32 +1,42 @@
 from matrix import Matrix
 from python_matrix import gen_matrix, matrix_mul
+import numpy as np
 from pprint import pprint
 from time import time
 
 if __name__ == "__main__":
     # l = 500
-    # -----------------------------------
-    # python finish at 31.077462911605835
-    # cython finish at 8.099114179611206
-    # cpp finish at 0.011924982070922852
-    # -----------------------------------
+    # --------------------------------------
+    # python finish at                      31.077462911605835
+    # cython finish at                      8.099114179611206
+    # python extension finish at            0.21802687644958496
+    # numpy finish at                       0.010122060775756836
+    # --------------------------------------
 
     l = 200
     m1 = gen_matrix(l)
     m2 = gen_matrix(l)
 
-    # pprint(m1)
-    # pprint(m2)
-    start = time()
-    matrix_mul(m1,m2)
-    print('python finish at {}'.format(time() - start))
+    m1_arr = np.array(m1)
+    m2_arr = np.array(m2)
 
-    start = time()
     cpp_m1 = Matrix(m1)
     cpp_m2 = Matrix(m2)
+
+    # pprint(m1)
+    # pprint(m2)
+    # start = time()
+    # matrix_mul(m1,m2)
+    # print('python finish at {}'.format(time() - start))
+
+    start = time()
+    np.matmul(m1_arr, m2_arr)
+    print('numpy finish at {}'.format(time() - start))
+
+    start = time()
+    cpp_m1 * cpp_m2
     print('cpp finish at {}'.format(time() - start))
 
-    # (cpp_m1 * cpp_m2).print()
 
     # proverochki
 
