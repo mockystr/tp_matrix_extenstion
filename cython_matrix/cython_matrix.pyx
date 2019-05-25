@@ -1,4 +1,5 @@
 import random
+import time
 import numpy as np
 
 cdef list numbers_list = [1.23, 5.123, 5.7, 5, 6, 2, 1.6, 0.7, 5.5, 8.1, 4.9, 
@@ -23,3 +24,12 @@ cpdef list gen_matrix(int n):
     for _ in range(n):
         ll.append([random.choice(numbers_list) for i in range(n)])
     return ll
+
+cpdef int make_tests():
+    cdef int l = 500
+    cdef list m1 = gen_matrix(l)
+    cdef list m2 = gen_matrix(l)
+
+    t = time.time()
+    matrix_mul(m1,m2)
+    print('time finish {}'.format(time.time() - t))
